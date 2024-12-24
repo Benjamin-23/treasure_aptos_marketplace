@@ -154,6 +154,24 @@ address 0xc74780df02fd2743c427a14a8b2bdb627f0fb41847a4043bd7672474c356e710 {
 
     }
 
+   // Transfer Ownership
+    public entry fun transfer_ownership(account: &signer, nft_index: u64, new_owner: address) acquires Marketplace {
+        let seller_addr = signer::address_of(account);
+        assert!(check_marketplace_initialized(seller_addr), error::not_found(E_MARKETPLACE_NOT_INITIALIZED));
+        let marketplace = borrow_global_mut<Marketplace>(seller_addr);
+        let listing = vector::borrow_mut(&mut marketplace.listings, nft_index);
+        assert!(listing.owner == seller_addr, error::permission_denied(E_NOT_SELLER));
+        listing.owner = new_owner;
+    }
+    // Retrieve NFT Owner
+    #[view]
+    public fun retrieve_nft_owner(nft_index: u64, account: address): address acquires Marketplace {
+        let marketplace = borrow_global<Marketplace>(account);
+        let listing = vector::borrow(&marketplace.listings, nft_index);
+        listing.owner
+    }
+
+
     // End Auction
     public entry fun end_auction(account: &signer, nft_index: u64) acquires Marketplace {
         let seller_addr = signer::address_of(account);
@@ -166,7 +184,7 @@ address 0xc74780df02fd2743c427a14a8b2bdb627f0fb41847a4043bd7672474c356e710 {
     }
 
     //  Check if NFT is for Sale
-
+    #[view]
     public fun check_nft_for_sale(nft_index: u64, account: address): bool acquires Marketplace {
         let marketplace = borrow_global<Marketplace>(account);
         let listing = vector::borrow(&marketplace.listings, nft_index);
@@ -180,6 +198,25 @@ address 0xc74780df02fd2743c427a14a8b2bdb627f0fb41847a4043bd7672474c356e710 {
         listing.current_price
     }
 
+ // transfer NFT to marketplace contract
+ 
+    public entry fun transfer_nft_to_marketplace(account: &signer, nft_index: u64, receiver: address) acquires Marketplace {
+        let sender = signer::address_of(account);
+        let marketplace = borrow_global_mut<Marketplace>(receiver);
+        let listing = vector::borrow_mut(&mut marketplace.listings, nft_index);
+        listing.owner = sender;
 
+    }
+// sell NFT to marketplace contract
+
+    public entry fun sell_nft_to_marketplace(account: &signer, nft_index: u64, receiver: address, price: u64) acquires Marketplace {
+        let sender = signer::address_of(account);
+        let marketplace = borrow_global_mut<Marketplace>(receiver);
+        let listing = vector::borrow_mut(&mut marketplace.listings, nft_index);
+        listing.owner = sender;
+        listing.current_price = price;
+    }
+
+   
 }
 }

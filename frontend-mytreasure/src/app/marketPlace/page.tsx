@@ -1,9 +1,48 @@
+"use client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Clock, Tag, User } from "lucide-react";
-import { Button } from "./ui/button";
+import { Button } from "@/components/ui/button";
+import { AptosClient } from "aptos";
+import { useEffect, useState } from "react";
 
-export default function NFTList({ nfts, onSelectNFT }: any) {
+export default function NFTList({ onSelectNFT }: any) {
+  //   public entry fun list_nft_for_sale(account: &signer, nft_index: u64, starting_price: u64, auction_end_time: u64) acquires Marketplace {
+  //     let seller_addr = signer::address_of(account);
+  //     assert!(check_marketplace_initialized(seller_addr), error::not_found(E_MARKETPLACE_NOT_INITIALIZED));
+  //     let marketplace = borrow_global_mut<Marketplace>(seller_addr);
+  //     let listing = vector::borrow_mut(&mut marketplace.listings, nft_index);
+  //     assert!(listing.owner == seller_addr, error::permission_denied(E_NOT_SELLER));
+  //     listing.starting_price = starting_price;
+  //     listing.current_bid = starting_price;
+  //     listing.current_price = starting_price;
+  //     listing.auction_end_time = auction_end_time;
+
+  // }
+  //   create function to list nfts for sale using  (list_nft_for_sale)
+  const [nfts, setNfts] = useState([]);
+  const client = new AptosClient("https://fullnode.testnet.aptoslabs.com/v1");
+  const marketplaceAddr =
+    "0xc74780df02fd2743c427a14a8b2bdb627f0fb41847a4043bd7672474c356e710";
+
+  const getNFTs = async () => {
+    try {
+      const resource = await client.getAccountResource(
+        marketplaceAddr,
+        `${marketplaceAddr}::NFTMarketplace::Marketplace`
+      );
+      if (resource && resource.data && (resource.data as any).listings) {
+        setNfts((resource.data as any).listings);
+      }
+    } catch (error) {
+      console.error("Error fetching NFTs:", error);
+    }
+  };
+
+  useEffect(() => {
+    getNFTs();
+  }, []);
+
   const decodeHex = (hex: any) => {
     try {
       const clean = hex.replace("0x", "");
@@ -18,7 +57,6 @@ export default function NFTList({ nfts, onSelectNFT }: any) {
 
   // Format timestamp to readable date
   const formatDate = (timestamp: any) => {
-    // if (wallet.address) window.location.href = "/mint";
     return new Date(parseInt(timestamp) * 1000).toLocaleString();
   };
 
@@ -27,19 +65,20 @@ export default function NFTList({ nfts, onSelectNFT }: any) {
     return `${address.slice(0, 6)}...${address.slice(-4)}`;
   };
   return (
-    <div className="flex gap-6 flex-wrap justify-center">
+    <div className=" flex gap-4 justify-center items-center space-y-4">
       {nfts &&
         nfts.map((nft: any) => {
           return (
             <Card className="w-full max-w-2xl" key={nft.id}>
               <CardHeader>
                 <CardTitle className="flex items-center justify-between">
-                  {/* <img src={decodeHex(nft.url)} alt={decodeHex(nft.name)} /> */}
+                  {/* <img src={decodeHex(nft.url)} alt="loading" /> */}
                   <span>{decodeHex(nft.name)}</span>
                   <Badge variant={nft.is_sold ? "destructive" : "secondary"}>
                     {nft.is_sold ? "Sold" : "Active"}
                   </Badge>
                 </CardTitle>
+                {decodeHex(nft.name)}
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
@@ -52,7 +91,7 @@ export default function NFTList({ nfts, onSelectNFT }: any) {
                     <div className="flex items-center gap-2">
                       <Tag className="h-4 w-4" />
                       <span className="font-semibold">Current Price:</span>
-                      <span>{nft.starting_price / 100000000} APT</span>
+                      <span>{nft.current_price * 10000000} APTS</span>
                     </div>
 
                     <div className="flex items-center gap-2">
@@ -81,14 +120,14 @@ export default function NFTList({ nfts, onSelectNFT }: any) {
                   </div>
                 </div>
 
-                <div className=" flex justify-between items-center">
+                <div className="pt-4">
                   <p className="text-sm text-gray-500">
-                    Starting Price: {nft.starting_price / 100000000} APT
+                    Starting Price: {nft.starting_price} ETH
                     {nft.url !== "0x" && ` • URL: ${decodeHex(nft.url)}`}
                   </p>
-                  <Button onClick={() => onSelectNFT(nft)}>Sell</Button>
                 </div>
               </CardContent>
+              <Button onClick={() => onSelectNFT(nft)}>Place Bid</Button>
             </Card>
           );
         })}
