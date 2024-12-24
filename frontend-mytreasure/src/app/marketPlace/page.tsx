@@ -7,18 +7,6 @@ import { AptosClient } from "aptos";
 import { useEffect, useState } from "react";
 
 export default function NFTList({ onSelectNFT }: any) {
-  //   public entry fun list_nft_for_sale(account: &signer, nft_index: u64, starting_price: u64, auction_end_time: u64) acquires Marketplace {
-  //     let seller_addr = signer::address_of(account);
-  //     assert!(check_marketplace_initialized(seller_addr), error::not_found(E_MARKETPLACE_NOT_INITIALIZED));
-  //     let marketplace = borrow_global_mut<Marketplace>(seller_addr);
-  //     let listing = vector::borrow_mut(&mut marketplace.listings, nft_index);
-  //     assert!(listing.owner == seller_addr, error::permission_denied(E_NOT_SELLER));
-  //     listing.starting_price = starting_price;
-  //     listing.current_bid = starting_price;
-  //     listing.current_price = starting_price;
-  //     listing.auction_end_time = auction_end_time;
-
-  // }
   //   create function to list nfts for sale using  (list_nft_for_sale)
   const [nfts, setNfts] = useState([]);
   const client = new AptosClient("https://fullnode.testnet.aptoslabs.com/v1");
@@ -64,8 +52,32 @@ export default function NFTList({ onSelectNFT }: any) {
   const formatAddress = (address: any) => {
     return `${address.slice(0, 6)}...${address.slice(-4)}`;
   };
+  // handle place a bid
+  const placeBid = async (nft: any) => {
+    try {
+      const { petra }: any = window;
+      if (!petra) throw new Error("Petra wallet not found");
+      const account = await petra.account();
+      if (!account) throw new Error("No account connected");
+      const payload = {
+        type: "entry_function_payload",
+        function: `${marketplaceAddr}::NFTMarketplace::place_bid`,
+        type_arguments: [],
+        arguments: [nft.id, nft.current_price + 10000000],
+      };
+      const pendingTransaction = await petra.signAndSubmitTransaction({
+        payload,
+      });
+      await client.waitForTransaction(pendingTransaction.hash);
+      console.log("bid placed");
+      getNFTs();
+    } catch (error) {
+      console.error("Error placing bid:", error);
+    }
+  };
+
   return (
-    <div className=" flex gap-4 justify-center items-center space-y-4">
+    <div className=" flex flex-wrap gap-4 justify-center items-center space-y-4">
       {nfts &&
         nfts.map((nft: any) => {
           return (
@@ -91,7 +103,7 @@ export default function NFTList({ onSelectNFT }: any) {
                     <div className="flex items-center gap-2">
                       <Tag className="h-4 w-4" />
                       <span className="font-semibold">Current Price:</span>
-                      <span>{nft.current_price * 10000000} APTS</span>
+                      <span>{nft.current_price / 10000000} APTS</span>
                     </div>
 
                     <div className="flex items-center gap-2">
@@ -122,12 +134,12 @@ export default function NFTList({ onSelectNFT }: any) {
 
                 <div className="pt-4">
                   <p className="text-sm text-gray-500">
-                    Starting Price: {nft.starting_price} ETH
+                    Starting Price: {nft.starting_price / 10000000} ETH
                     {nft.url !== "0x" && ` • URL: ${decodeHex(nft.url)}`}
                   </p>
                 </div>
               </CardContent>
-              <Button onClick={() => onSelectNFT(nft)}>Place Bid</Button>
+              <Button onClick={() => placeBid(nft)}>Place Bid</Button>
             </Card>
           );
         })}

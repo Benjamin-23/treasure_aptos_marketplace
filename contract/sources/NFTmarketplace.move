@@ -81,7 +81,7 @@ address 0xc74780df02fd2743c427a14a8b2bdb627f0fb41847a4043bd7672474c356e710 {
      }
      
     // Place Bid
-     public fun place_bid(
+     public entry fun place_bid(
         bidder: &signer, 
         seller_addr: address, 
         nft_index: u64, 

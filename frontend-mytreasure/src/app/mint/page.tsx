@@ -71,7 +71,7 @@ export default function MintPage() {
       });
 
       // Wait for transaction confirmation
-      const client = new AptosClient("https://fullnode.devnet.aptoslabs.com");
+      const client = new AptosClient("https://fullnode.testnet.aptoslabs.com");
       const txn = await client.waitForTransaction(pendingTransaction.hash);
 
       const nftIndex = await getNFTIndex(account.address);
@@ -99,15 +99,16 @@ export default function MintPage() {
         address,
         `${marketplaceAddr}::NFTMarketplace::Marketplace`
       );
-      if (!resource || !resource.data || !resource.data.listings) {
+      const listings = (resource.data as { listings: NFT[] }).listings;
+      if (!resource || !resource.data || !listings) {
         return -1;
       }
-      const listings = resource.data.listings;
+
       console.log(listings, "listings");
       // Update nfts state with fetched listings
       setNfts(listings);
       console.log(nfts, "nfts after update");
-      return resource.data.listings.length - 1;
+      return listings.length - 1;
     } catch (error) {
       console.error("Error getting NFT index:", error);
       throw error;
