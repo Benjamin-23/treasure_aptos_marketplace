@@ -7,9 +7,15 @@ import NFTList from "@/components/NFTList";
 export default function MyCollection() {
   const [nfts, setNfts] = useState<NFT[]>([]);
   const client = new AptosClient("https://fullnode.testnet.aptoslabs.com/v1");
-  const marketplaceAddr =
-    "0xc74780df02fd2743c427a14a8b2bdb627f0fb41847a4043bd7672474c356e710";
-
+  // Helper function to format addresses
+  const formatAddress = (address: string): string => {
+    return address.startsWith("0x")
+      ? address.slice(2).padStart(64, "0")
+      : address.padStart(64, "0");
+  };
+  const marketplaceAddr = formatAddress(
+    "0xc74780df02fd2743c427a14a8b2bdb627f0fb41847a4043bd7672474c356e710"
+  );
   const getMyNFTs = async () => {
     try {
       const { petra }: any = window;
@@ -50,46 +56,47 @@ export default function MyCollection() {
   };
 
   // create a sell function that transfer the nft to  market place
-
+  // nft_index: u64, receiver: address, price: u64
   const sellNFT = async (nftId: any) => {
     try {
+      if (!nftId || !nftId.starting_price) {
+        throw new Error("Invalid NFT data");
+      }
+
       const { petra }: any = window;
       if (!petra) throw new Error("Petra wallet not found");
+
       const account = await petra.account();
       if (!account) throw new Error("No account connected");
-      // Implement logic to transfer NFT to marketplace contract
-      // sell_nft_to_marketplace
-      console.log(nftId, "selling using id");
-      //   public entry fun sell_nft_to_marketplace(account: &signer, nft_index: u64, receiver: address, price: u64) acquires Marketplace {
-      //     let sender = signer::address_of(account);
-      //     let marketplace = borrow_global_mut<Marketplace>(receiver);
-      //     let listing = vector::borrow_mut(&mut marketplace.listings, nft_index);
-      //     listing.owner = sender;
-      //     listing.current_price = price;
-      // }
+
+      // Convert and format values
+      const priceInApt = parseFloat(nftId.starting_price);
+      const priceInOctas = Math.floor(priceInApt * 100000000).toString();
+
       const payload = {
         type: "entry_function_payload",
         function: `${marketplaceAddr}::NFTMarketplace::sell_nft_to_marketplace`,
         type_arguments: [],
         arguments: [
-          account.address,
-          nftId,
-          marketplaceAddr,
-          // nfts.starting_price,
+          nftId.owner, // receiver address
+          nftId.id.toString(), // nft_index
+          priceInOctas, // price in octas
         ],
       };
+
+      console.log("Payload:", payload); // For debugging
 
       const pendingTransaction = await petra.signAndSubmitTransaction({
         payload,
       });
 
       await client.waitForTransaction(pendingTransaction.hash);
+      console.log("NFT listed successfully:", pendingTransaction.hash);
 
-      console.log("Selling NFT:", nftId);
-      // Update UI to reflect the change in NFT ownership
       getMyNFTs();
     } catch (error) {
       console.error("Error selling NFT:", error);
+      alert(error instanceof Error ? error.message : "Error selling NFT");
     }
   };
 

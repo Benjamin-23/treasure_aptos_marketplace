@@ -5,6 +5,17 @@ import { Clock, Tag, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AptosClient } from "aptos";
 import { useEffect, useState } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 export default function NFTList({ onSelectNFT }: any) {
   //   create function to list nfts for sale using  (list_nft_for_sale)
@@ -53,24 +64,43 @@ export default function NFTList({ onSelectNFT }: any) {
     return `${address.slice(0, 6)}...${address.slice(-4)}`;
   };
   // handle place a bid
+  //  bidder: &signer,
+  // seller_addr: address,
+  // nft_index: u64,
+  // bid_amount: u64
+
   const placeBid = async (nft: any) => {
     try {
       const { petra }: any = window;
       if (!petra) throw new Error("Petra wallet not found");
+
       const account = await petra.account();
       if (!account) throw new Error("No account connected");
+
+      const bidAmount = 0.00000005; // Replace with the actual bid amount
+      // const bidAmountInOctas = Math.floor(
+      //   Number(nft.starting_price) * 100000000
+      // );
+
       const payload = {
         type: "entry_function_payload",
         function: `${marketplaceAddr}::NFTMarketplace::place_bid`,
         type_arguments: [],
-        arguments: [nft.id, nft.current_price + 10000000],
+        arguments: [
+          account.address,
+          nft.owner,
+          nft.id,
+          nft.starting_price / 10000000,
+        ],
       };
+
       const pendingTransaction = await petra.signAndSubmitTransaction({
         payload,
       });
+
       await client.waitForTransaction(pendingTransaction.hash);
-      console.log("bid placed");
-      getNFTs();
+      console.log("Bid placed successfully!");
+      getNFTs(); // Refresh NFT list after placing a bid
     } catch (error) {
       console.error("Error placing bid:", error);
     }
@@ -139,7 +169,50 @@ export default function NFTList({ onSelectNFT }: any) {
                   </p>
                 </div>
               </CardContent>
-              <Button onClick={() => placeBid(nft)}>Place Bid</Button>
+              {/* Dialog */}
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button variant="outline">Place a bid</Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[425px]">
+                  <DialogHeader>
+                    <DialogTitle>Edit profile</DialogTitle>
+                    <DialogDescription>
+                      Make changes to your profile here. Click save when you're
+                      done.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="grid gap-4 py-4">
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="name" className="text-right">
+                        Name
+                      </Label>
+                      <Input
+                        id="name"
+                        defaultValue="Pedro Duarte"
+                        className="col-span-3"
+                      />
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="username" className="text-right">
+                        Username
+                      </Label>
+                      <Input
+                        id="username"
+                        defaultValue="@peduarte"
+                        className="col-span-3"
+                      />
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button type="submit" onClick={() => placeBid(nft)}>
+                      Save changes
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+
+              {/* end */}
             </Card>
           );
         })}

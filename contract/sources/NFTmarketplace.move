@@ -211,12 +211,12 @@ address 0xc74780df02fd2743c427a14a8b2bdb627f0fb41847a4043bd7672474c356e710 {
 
     public entry fun sell_nft_to_marketplace(account: &signer, nft_index: u64, receiver: address, price: u64) acquires Marketplace {
         let sender = signer::address_of(account);
+        assert!(price <= 10000000000000000, error::invalid_argument(E_INVALID_PRICE));
         let marketplace = borrow_global_mut<Marketplace>(receiver);
         let listing = vector::borrow_mut(&mut marketplace.listings, nft_index);
         listing.owner = sender;
         listing.current_price = price;
     }
-
    
 }
 }

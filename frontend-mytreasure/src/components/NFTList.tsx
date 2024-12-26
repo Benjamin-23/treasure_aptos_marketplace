@@ -70,14 +70,6 @@ export default function NFTList({ nfts, onSelectNFT }: any) {
                         {formatAddress(nft.owner)}
                       </span>
                     </div>
-
-                    <div className="flex items-center gap-2">
-                      <User className="h-4 w-4" />
-                      <span className="font-semibold">Highest Bidder:</span>
-                      <span className="font-mono">
-                        {formatAddress(nft.highest_bidder)}
-                      </span>
-                    </div>
                   </div>
                 </div>
 
